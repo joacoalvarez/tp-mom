@@ -1,11 +1,56 @@
 package factory
 
 import (
+	"fmt"
+
+	queueM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/queue_middleware"
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+func commonMiddleware(connectionSettings m.ConnSettings) (*amqp.Connection, *amqp.Channel, error) {
+	conn, err := amqp.Dial(
+		fmt.Sprintf("amqp://guest:guest@%s:%d/",
+			connectionSettings.Hostname,
+			connectionSettings.Port,
+		))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		conn.Close()
+		return nil, nil, err
+	}
+
+	return conn, ch, nil
+}
+
 func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) (m.Middleware, error) {
-	return nil, nil
+	conn, ch, err := commonMiddleware(connectionSettings)
+
+	q, err := ch.QueueDeclare(
+		queueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		ch.Close()
+		conn.Close()
+		return nil, err
+	}
+
+	qMiddleware := queueM.QueueMiddleWare{
+		Conn:    conn,
+		Channel: ch,
+		Queue:   q,
+	}
+
+	return &qMiddleware, nil
 }
 
 func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings m.ConnSettings) (m.Middleware, error) {
