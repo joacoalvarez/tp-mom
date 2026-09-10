@@ -11,7 +11,7 @@ import (
 
 type QueueMiddleware struct {
 	baseM.BaseMiddleware
-	Queue       amqp.Queue
+	Queue amqp.Queue
 }
 
 func (q *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {

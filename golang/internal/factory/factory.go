@@ -2,10 +2,10 @@ package factory
 
 import (
 	"fmt"
-	
+
 	baseM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/base_middleware"
-	queueM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/queue_middleware"
 	exchangeM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/exchange_middleware"
+	queueM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/queue_middleware"
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -50,7 +50,7 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 	}
 
 	qMiddleware := queueM.QueueMiddleware{
-		BaseMiddleware: baseM.BaseMiddleware {
+		BaseMiddleware: baseM.BaseMiddleware{
 			Conn:    conn,
 			Channel: ch,
 		},
@@ -65,15 +65,15 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 	if err != nil {
 		return nil, err
 	}
-	
+
 	err = ch.ExchangeDeclare(
 		exchange,
 		"direct",
-		false, 
-		false, 
-		false,   
-		false,   
-		nil,     
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		ch.Close()
@@ -82,12 +82,12 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 	}
 
 	eMiddleware := exchangeM.ExchangeMiddleware{
-		BaseMiddleware: baseM.BaseMiddleware {
+		BaseMiddleware: baseM.BaseMiddleware{
 			Conn:    conn,
 			Channel: ch,
 		},
 		ExchangeName: exchange,
-		RouteKeys: keys,
+		RouteKeys:    keys,
 	}
 
 	return &eMiddleware, nil

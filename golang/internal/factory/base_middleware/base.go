@@ -1,6 +1,6 @@
 package basemiddlware
 
-import(
+import (
 	"fmt"
 	"time"
 
@@ -59,4 +59,3 @@ func (b *BaseMiddleware) Close() error {
 
 	return nil
 }
-

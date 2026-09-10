@@ -27,21 +27,21 @@ func (e *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack
 		"",
 		false,
 		false,
-		true, 
-		false, 
-		nil,  
-    )
+		true,
+		false,
+		nil,
+	)
 	if err != nil {
 		return e.WrapChannelError(err)
 	}
 
 	for _, key := range e.RouteKeys {
 		err = e.Channel.QueueBind(
-				q.Name,  
-				key,
-				e.ExchangeName,
-				false,
-				nil)
+			q.Name,
+			key,
+			e.ExchangeName,
+			false,
+			nil)
 		if err != nil {
 			return e.WrapChannelError(err)
 		}
@@ -91,13 +91,13 @@ func (e *ExchangeMiddleware) Send(msg m.Message) error {
 			false,
 			false,
 			amqp.Publishing{
-				ContentType:  "text/plain",
-				Body:         []byte(body),
+				ContentType: "text/plain",
+				Body:        []byte(body),
 			})
 		if err != nil {
 			return e.WrapChannelError(err)
 		}
-    }
+	}
 
 	return nil
 }
