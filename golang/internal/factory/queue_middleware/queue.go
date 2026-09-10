@@ -2,27 +2,25 @@ package queue_middleware
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	baseM "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/factory/base_middleware"
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type QueueMiddleWare struct {
-	Conn        *amqp.Connection
-	Channel     *amqp.Channel
+type QueueMiddleware struct {
+	baseM.BaseMiddleware
 	Queue       amqp.Queue
-	consumerTag string
 }
 
-func (q *QueueMiddleWare) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
-	if q.consumerTag != "" {
+func (q *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
+	if q.ConsumerTag != "" {
 		return nil
 	}
 
 	// unique tag for each consumer
-	tag := fmt.Sprintf("consumer-%s-%d", q.Queue.Name, time.Now().UnixNano())
+	tag := q.GetConsumerTag(q.Queue.Name)
 
 	msgs, err := q.Channel.Consume(
 		q.Queue.Name,
@@ -34,10 +32,10 @@ func (q *QueueMiddleWare) StartConsuming(callbackFunc func(msg m.Message, ack fu
 		nil,
 	)
 	if err != nil {
-		return q.wrapChannelError(err)
+		return q.WrapChannelError(err)
 	}
 
-	q.consumerTag = tag
+	q.ConsumerTag = tag
 
 	go func() {
 		for d := range msgs {
@@ -55,21 +53,7 @@ func (q *QueueMiddleWare) StartConsuming(callbackFunc func(msg m.Message, ack fu
 	return nil
 }
 
-func (q *QueueMiddleWare) StopConsuming() error {
-	if q.consumerTag == "" {
-		return nil
-	}
-
-	err := q.Channel.Cancel(q.consumerTag, false)
-	if err != nil {
-		return q.wrapChannelError(err)
-	}
-
-	q.consumerTag = ""
-	return nil
-}
-
-func (q *QueueMiddleWare) Send(msg m.Message) error {
+func (q *QueueMiddleware) Send(msg m.Message) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -86,33 +70,8 @@ func (q *QueueMiddleWare) Send(msg m.Message) error {
 			Body:         []byte(body),
 		})
 	if err != nil {
-		return q.wrapChannelError(err)
+		return q.WrapChannelError(err)
 	}
 
 	return nil
-}
-
-func (q *QueueMiddleWare) Close() error {
-	if err := q.Channel.Close(); err != nil {
-		return m.ErrMessageMiddlewareClose
-	}
-
-	if err := q.Conn.Close(); err != nil {
-		return m.ErrMessageMiddlewareClose
-	}
-
-	return nil
-}
-
-func (q *QueueMiddleWare) wrapChannelError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if err == amqp.ErrClosed || (q.Channel != nil && q.Channel.IsClosed()) {
-		q.consumerTag = ""
-		return m.ErrMessageMiddlewareDisconnected
-	}
-
-	return m.ErrMessageMiddlewareMessage
 }
